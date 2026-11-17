@@ -62,7 +62,7 @@ to any page that calls `examples/page.ts`. Files go to `exports/<piece>/`.
 | `web` | `web/` | static build of the site with relative paths |
 
 Options: `--surface marble|wood|linen|plain|none`, `--bg '#hex'`, `--yaw deg`,
-`--tilt deg` (camera elevation offset; it stays between 12° and 80°), `--angles N`, `--seconds S`, `--fps N`, `--size WxH`.
+`--tilt deg` (camera elevation offset; it stays between 12° and 80°), `--bob deg` (the camera rises and dips by this much once over a video's turn, which reads less flat than a plain spin), `--angles N`, `--seconds S`, `--fps N`, `--size WxH`.
 
 Real size: 1 world unit = 3 cm (`CM_PER_UNIT` in `lib/export.ts`). Build pieces at
 that scale when the size matters (a 4 cm keychain is 1.33 units wide).

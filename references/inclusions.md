@@ -35,6 +35,25 @@ new kinds by drawing with the local `petal()` helper (length, width, angle, tip)
 - `foamTexture({ band })` is cellular noise (F2 − F1) masked by a band function; the
   band is solid at its peak and breaks into rings at its edges.
 
+## Shells, starfish, stones
+
+Use real scans for shells (`scan()` in `lib/assets.ts`, see `references/assets.md`).
+They carry the irregular ribs, worn edges and mottled colour that make a shell read
+as real at a glance. The procedural ones are the fallback:
+
+- `shell()`: a ribbed valve with thickness, scalloped margin, growth lines and hinge
+  ears (`ears: false` for a cockle). Colour follows the ribs and growth bands.
+- `snail()`: a spiral shell grown along a logarithmic helix. `growth` near 1.2 and a
+  large `height` give a slender turritella; `growth` near 1.9 and a small `height` a
+  squat top shell.
+- `starfish()`: tapering domed arms with rows of tubercles, lighter on the bumps,
+  darker in the grooves. There is no starfish scan, so this is the one to use.
+- `pebbles()`: matte, irregular stones and shell grit. Keep them matte: glossy ones
+  read as water drops under the resin.
+
+Sink everything a little into the sand (`sandTop(x, z) - 0.02..0.04`) and keep it a
+quarter of the radius away from the rim.
+
 ## Rose
 
 `rose({ color, petals, open })` builds each petal as a strip of a cylinder around the

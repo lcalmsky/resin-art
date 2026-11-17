@@ -11,11 +11,13 @@ export interface PieceDef {
   studio: StudioOptions;
   /** Add the piece (and its shadow/caustics) to `s.turntable`. Return an `update`
    * for anything that moves on its own. */
-  build(s: Studio): { update?: (t: number, dt: number) => void } | void;
+  build(s: Studio): { update?: (t: number, dt: number) => void; ready?: Promise<unknown> } | void;
 }
 
 export interface ResinController {
   studio: Studio;
+  /** Resolves once everything the piece loads (scans) is in the scene. */
+  ready: Promise<void>;
   snapshot(o?: SnapshotOptions): Promise<Blob>;
   exportModel(format: ModelFormat): Promise<Blob>;
   pose(yawDeg: number, tiltDeg?: number): void;
@@ -36,6 +38,7 @@ export function mountPiece(host: HTMLElement, def: PieceDef, overrides: StudioOp
   s.run(built.update);
   return {
     studio: s,
+    ready: Promise.resolve(built.ready).then(() => undefined),
     snapshot: (o) => snapshot(s, o),
     exportModel: (f) => exportModel(s, f),
     pose: s.pose, setSpin: s.setSpin, setSurface: s.setSurface, setBackdrop: s.setBackdrop,

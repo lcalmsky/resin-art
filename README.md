@@ -7,13 +7,19 @@ inside, glints that travel across a wave top as it turns.
 
 <p align="center"><img src="media/seashore.gif" width="420" alt="A round resin piece with a beach inside, turning on a marble table"></p>
 
-One piece definition then becomes whatever you need: a web page or embeddable
+The shells are real: CC0 photogrammetry scans of museum specimens from Smithsonian
+Open Access, set into procedural sand and water. One piece definition then becomes
+whatever you need: a web page or embeddable
 component, a PNG, a cutout PNG with no background, a sprite sheet, a turntable
 video (with or without alpha), or a 3D file (GLB, USDZ, STL, OBJ).
 
-| Seashore | Ocean slab | Rose cube | Flower coaster |
-|---|---|---|---|
-| ![Seashore](media/seashore.png) | ![Ocean slab](media/ocean-slab.png) | ![Rose cube](media/rose-cube.png) | ![Flower coaster](media/flower-coaster.png) |
+| Seashore | Up close | Ocean slab |
+|---|---|---|
+| ![Seashore](media/seashore.png) | ![Scanned scallop, cone and olive shells and a starfish in the sand](media/seashore-closeup.png) | ![Ocean slab](media/ocean-slab.png) |
+
+| Rose cube | Flower coaster |
+|---|---|
+| ![Rose cube](media/rose-cube.png) | ![Flower coaster](media/flower-coaster.png) |
 
 ## Use the skill
 
@@ -43,8 +49,34 @@ gets a PNG, "누끼" or "for Figma" gets a cutout, "for Unity" gets a GLB, "릴�
 1080x1920 MP4. It asks only when nothing in the request points to a format (for
 example "make it an asset", which could be 2D or 3D), and then only once.
 
-It builds one piece first, shows you a still, and waits for a yes before making a
-set or exporting.
+Before building, it looks at photos of real pieces of the same kind and uses real
+scans for shells and coral instead of modelling them (`references/assets.md`). It
+builds one piece first, shows you a still, and waits for a yes before making a set or
+exporting.
+
+## Real shells from free scans
+
+Procedural shells give themselves away: too smooth, too even, too symmetric. So the
+pieces use photogrammetry scans of real shells from
+[Smithsonian Open Access](https://3d.si.edu), which are CC0, in the web GLB packaging
+of [codepawl/smithsonian-3d-glb](https://huggingface.co/datasets/codepawl/smithsonian-3d-glb).
+A script searches and downloads them:
+
+```sh
+npm run scans -- search scallop conus oliva cypraea coral
+npm run scans -- fetch conus-textile-c29a9ede     # 20% LOD → assets/scans/, credit added to CREDITS.md
+```
+
+```ts
+import { scan, ready } from './lib/assets.ts';
+const cone = scan(new URL('./assets/scans/conus-textile-c29a9ede.glb', import.meta.url).href, { size: 0.5 });
+cone.position.set(x, sandTop(x, z) - 0.03, z);  // placed at once, fills in when loaded
+return { update, ready: ready(cone) };           // exports wait for it
+```
+
+There is no starfish scan, so `starfish()` is procedural: tapering domed arms with
+rows of tubercles. `references/assets.md` lists other free sources (Poly Haven,
+ambientCG, Sketchfab CC0) and where to look at real pieces for reference.
 
 ## What you can get
 
@@ -86,7 +118,7 @@ bar), `?debug` (step time by hand with `__step(seconds)`), `?t=2.5` (freeze time
 ## Export from the command line
 
 ```sh
-npm run export -- seashore --formats mp4 --size 1080x1350 --seconds 10
+npm run export -- seashore --formats mp4 --size 1080x1350 --seconds 10 --bob 9
 npm run export -- rose-cube --formats cutout,sprite --angles 12 --size 1200x1200
 npm run export -- flower-coaster --formats mov,webm --surface none
 npm run export -- ocean-slab --formats glb,usdz,stl
@@ -96,7 +128,7 @@ npm run export -- seashore --formats all
 Files land in `exports/<piece>/`. Formats: `page` `png` `cutout` `sprite` `mp4`
 `gif` `webm` `mov` `apng` `glb` `usdz` `stl` `obj` `web`. Options: `--size WxH`,
 `--seconds`, `--fps`, `--angles`, `--surface`, `--bg '#hex'`, `--yaw`, `--tilt`,
-`--out`. The script starts its own dev server and a headless Chrome with GPU WebGL,
+`--bob` (the camera rises and dips over the turn), `--out`. The script starts its own dev server and a headless Chrome with GPU WebGL,
 steps time exactly, and encodes with ffmpeg. 3D files are real size: 1 unit = 3 cm.
 
 ## Embed a piece
@@ -144,7 +176,8 @@ What the library gives you:
 | module | |
 |---|---|
 | `lib/resin.ts` | `resin()` material (transmissive, IOR 1.54); forms `block`, `pour`, `freeformOutline`, `slab`, `disc`, `rippleField`; `pigment()` for tint that deepens and swirls; `scatter()` |
-| `lib/inclusions.ts` | `sandMaterial`, `foamTexture` (lace), `flat`, `shell`, `beads` (pearls, bubbles), `glitter`, `pressed` flowers (daisy, five, hydrangea, lace, sprig, leaf), `rose` |
+| `lib/inclusions.ts` | `sandMaterial`, `foamTexture` (lace), `flat`, `shell` (ribbed valve), `snail` (spiral shell), `starfish`, `pebbles`, `beads` (pearls, bubbles), `glitter`, `pressed` flowers (daisy, five, hydrangea, lace, sprig, leaf), `rose` |
+| `lib/assets.ts` | `scan()` loads a scanned GLB (meshopt, WebP) sized and resting on the sand; `ready()` |
 | `lib/light.ts` | tinted `contactShadow` and animated `caustics` on the table |
 | `lib/studio.ts`, `lib/surfaces.ts` | softbox light, tables, drag turntable with momentum, light sweep, `?debug` stepping |
 | `lib/piece.ts`, `lib/export.ts` | `mountPiece()` and its controller; PNG, cutout and 3D export |
@@ -161,11 +194,13 @@ Three rules do most of the work, and `SKILL.md` has the rest:
 | | |
 |---|---|
 | `SKILL.md`, `references/` | the skill: workflow, rules, and guides for style, pieces, inclusions, outputs, verification and video |
-| `lib/` | the library above, eight TypeScript files, only dependency `three` |
+| `lib/` | the library above, nine TypeScript files, only dependency `three` |
+| `assets/scans/` | CC0 shell scans used by the examples, with `CREDITS.md` |
 | `examples/` | `seashore`, `ocean-slab`, `rose-cube`, `flower-coaster` |
-| `scripts/` | `export.ts` (every deliverable), `capture.ts` (page screenshots), `cdp.ts` (headless Chrome driver) |
+| `scripts/` | `export.ts` (every deliverable), `scans.ts` (find and fetch CC0 scans), `capture.ts` (page screenshots), `cdp.ts` (headless Chrome driver) |
 | `media/` | the images in this README |
 
 ## License
 
-MIT
+Code: MIT. Shell scans in `assets/scans/`: CC0, Smithsonian Institution (see
+`assets/scans/CREDITS.md`); not endorsed by the Smithsonian.

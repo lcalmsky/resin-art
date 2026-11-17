@@ -14,7 +14,7 @@ const FRAMES = +framesArg, FPS = +(fpsArg || 30), W = +(wArg || 1920), H = +(hAr
 mkdirSync(outDir, { recursive: true });
 const b = await launch(W, H);
 try {
-  await b.open(url, 'typeof __step === "function"');
+  await b.open(url, 'typeof __step === "function" && (!window.__resin || __resin.loaded)');
   if (setupJs) await b.evalJs(setupJs);
   const t0 = Date.now();
   for (let i = 0; i < FRAMES; i++) {

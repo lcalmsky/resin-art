@@ -10,7 +10,8 @@
     "build": "vite build",
     "typecheck": "tsc -p tsconfig.json",
     "capture": "node scripts/capture.ts",
-    "export": "node scripts/export.ts"
+    "export": "node scripts/export.ts",
+    "scans": "node scripts/scans.ts"
   },
   "dependencies": {
     "three": "0.179.1"

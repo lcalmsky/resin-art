@@ -98,7 +98,7 @@ export async function exportModel(s: Studio, format: ModelFormat): Promise<Blob>
   const root = exportRoot(s, format);
   switch (format) {
     case 'glb': {
-      const buf = await new GLTFExporter().parseAsync(root, { binary: true }) as ArrayBuffer;
+      const buf = await new GLTFExporter().parseAsync(root, { binary: true, maxTextureSize: 1024 }) as ArrayBuffer;
       return new Blob([buf], { type: 'model/gltf-binary' });
     }
     case 'usdz': {

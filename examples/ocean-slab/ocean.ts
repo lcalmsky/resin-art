@@ -5,7 +5,8 @@
 import * as THREE from 'three';
 import type { PieceDef } from '../../lib/piece.ts';
 import { resin, slab, pigment, rippleField } from '../../lib/resin.ts';
-import { sandMaterial, foamTexture, flat, shell } from '../../lib/inclusions.ts';
+import { sandMaterial, foamTexture, flat } from '../../lib/inclusions.ts';
+import { scan, ready } from '../../lib/assets.ts';
 import { contactShadow, caustics } from '../../lib/light.ts';
 import { noise2, fbm, clamp, smooth } from '../../lib/noise.ts';
 
@@ -21,7 +22,7 @@ export const oceanSlab: PieceDef = {
     const ripple = rippleField(7, 0.75);
     const water = slab({
       width: W, depth: D, height: H, relief: 0.16, segments: 260,
-      surface: ripple, calm: (x, z) => 0.55 + 0.45 * smooth(0.2, 0.7, sea(x, z)),
+      surface: ripple, calm: (x, z) => 0.15 + 0.85 * smooth(0.25, 0.75, sea(x, z)),
     });
     pigment(water, [
       { at: 0.0, color: '#ffffff' },
@@ -59,16 +60,18 @@ export const oceanSlab: PieceDef = {
     foam2.position.y = H * 0.56;
     piece.add(foam2);
 
-    // Two shells half-buried in the sand.
-    const scallop = shell({ ribs: 20, color: '#f6f0e6', band: '#d18a52', seed: 3 });
-    scallop.scale.setScalar(0.75);
-    scallop.position.set(-0.55, sandTop(-0.55, 0.55) + 0.01, 0.55);
-    scallop.rotation.set(-0.25, 0.9, 0.12);
-    const cockle = shell({ ribs: 14, color: '#efe2cf', band: '#c27a45', seed: 9, cup: 0.35, fan: 2.1 });
-    cockle.scale.setScalar(0.42);
-    cockle.position.set(-1.15, sandTop(-1.15, -0.25) + 0.01, -0.25);
-    cockle.rotation.set(0.2, -1.6, -0.1);
-    piece.add(scallop, cockle);
+    // Two real shells half-buried in the sand: CC0 Smithsonian scans (assets/scans/CREDITS.md).
+    const shellAt = (file: string, size: number, rotation: [number, number, number], x: number, z: number, yaw: number) => {
+      const g = scan(new URL(`../../assets/scans/${file}.glb`, import.meta.url).href, { size, rotation, roughness: 0.45 });
+      g.position.set(x, sandTop(x, z) - 0.03, z);
+      g.rotation.y = yaw;
+      piece.add(g);
+      return g;
+    };
+    const shells = [
+      shellAt('mimachlamys-senatoria-crassicostata-5dbe459a', 0.6, [-Math.PI / 2, 0, 0], -0.6, 0.5, 0.9),
+      shellAt('conus-textile-c29a9ede', 0.42, [0, 0, 0], -1.1, -0.3, -1.4),
+    ];
 
     piece.position.y = 0.001;
     s.turntable.add(piece);
@@ -77,6 +80,6 @@ export const oceanSlab: PieceDef = {
     light.mesh.position.set(1.1, 0.004, -0.9);
     s.turntable.add(light.mesh);
 
-    return { update: (t: number) => light.update(t) };
+    return { update: (t: number) => light.update(t), ready: ready(...shells) };
   },
 };

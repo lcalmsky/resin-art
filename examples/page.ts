@@ -35,6 +35,9 @@ export function page(def: PieceDef) {
       const b = document.createElement('button');
       b.type = 'button'; b.textContent = label;
       b.onclick = async () => { b.disabled = true; try { await run(); } finally { b.disabled = false; } };
+      // Exports taken before scans finish loading would leave them out.
+      b.disabled = true;
+      c.ready.then(() => { b.disabled = false; });
       return b;
     };
     bar.append(surface,
@@ -50,6 +53,8 @@ export function page(def: PieceDef) {
       name: def.name,
       snapshot64: async (opts: SnapshotOptions) => base64(await c.snapshot(opts)),
       model64: async (f: ModelFormat) => base64(await c.exportModel(f)),
+      loaded: false,
     },
   });
+  c.ready.then(() => { (window as unknown as { __resin: { loaded: boolean } }).__resin.loaded = true; });
 }

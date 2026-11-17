@@ -38,6 +38,7 @@ as fake straight away, and each has a rule below:
 
 - resin that looks milky or like frosted plastic instead of water-clear
 - inclusions that are flat vector clip-art, or float in mid-air with no layer
+- shells and starfish that look modelled: smooth, evenly coloured, too symmetric
 - one uniform tint instead of colour that deepens with thickness and swirls
 - a wave top that is a smooth sine bump, or so fine it reads as noise
 - a black, opaque shadow under a clear object
@@ -47,12 +48,14 @@ as fake straight away, and each has a rule below:
 ## Workflow
 
 1. **Pin the piece and the deliverables** before writing code. Read
-   `references/style.md` and `references/outputs.md`. Decide the form (slab, block,
+   `references/style.md` and `references/outputs.md`. Look at photos of real pieces
+   of the same kind first (`references/assets.md`), and use real scans for shells
+   and coral instead of modelling them. Decide the form (slab, block,
    pour), the size (1 unit = 3 cm), the tint, the inclusions, the table it sits on,
    and the outputs (inferred, or asked once if unclear). If there is a reference photo, list what you see in it layer by
    layer from the bottom up.
-2. **Set up the project.** Copy `lib/` into the project (eight `.ts` files, only
-   dependency is `three`); write the piece as a `PieceDef` like the examples and use Vite + TypeScript (`package.json`, `tsconfig.json`
+2. **Set up the project.** Copy `lib/` into the project (nine `.ts` files, only
+   dependency is `three`), and `assets/scans/` if the piece uses scans; write the piece as a `PieceDef` like the examples and use Vite + TypeScript (`package.json`, `tsconfig.json`
    and `vite.config.ts` in this repo show the setup). No framework needed.
 3. **Build one piece first** and show it (a still from `scripts/capture.ts`, next to
    the reference if there is one). Get a yes before building a set. A set built at
@@ -108,7 +111,8 @@ as fake straight away, and each has a rule below:
 | `lib/surfaces.ts` | table tops: `marble` `wood` `linen` `plain` `none` |
 | `lib/export.ts` | `snapshot(studio, { width, height, matte })` → PNG blob; `exportModel(studio, 'glb' \| 'usdz' \| 'stl' \| 'obj')`; `CM_PER_UNIT` |
 | `lib/resin.ts` | `resin()` material; forms `block` `pour` `freeformOutline` `slab` `disc` (round pour with a wave top) `rippleField`; `pigment()` vertex tint; `scatter()` |
-| `lib/inclusions.ts` | `sandMaterial` `foamTexture` `flat` `shell` `beads` (pearls, bubbles) `glitter` `pressed` (daisy, five, hydrangea, lace, sprig, leaf) `rose` |
+| `lib/inclusions.ts` | `sandMaterial` `foamTexture` `flat` `shell` (ribbed valve) `snail` (spiral shell) `starfish` `pebbles` `beads` (pearls, bubbles) `glitter` `pressed` (daisy, five, hydrangea, lace, sprig, leaf) `rose` |
+| `lib/assets.ts` | `scan(url, { size, rotation, roughness })` loads a CC0 photogrammetry scan (GLB, meshopt, WebP) into a group placed at once; `ready(...)` for the piece's `ready` |
 | `lib/light.ts` | `contactShadow` (tinted, rect or round) `caustics` (animated, additive); both tagged `userData.table` so cutouts and exports skip them |
 | `lib/noise.ts` | seeded `rng` `noise2` `fbm` (ridged for wave creases) `cells` (foam lace) |
 
@@ -125,6 +129,8 @@ as fake straight away, and each has a rule below:
 - `scripts/capture.ts <url?debug> <outDir> <frames> <fps> [w] [h] [setupJs] [frameJs]` —
   deterministic full-page screenshots, for checking layout and motion
 - `scripts/cdp.ts` — the headless Chrome driver both use (Metal ANGLE, so WebGL works)
+- `scripts/scans.ts search <word…> | fetch <slug…>` — find and download CC0 Smithsonian
+  scans of shells and coral into `assets/scans/` with credits (`npm run scans`)
 
 Runs with Node ≥ 22.18 (TypeScript is stripped natively) plus ffmpeg for encoding;
 it finds a local Chrome/Chromium or uses `$CHROME`.

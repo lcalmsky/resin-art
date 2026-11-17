@@ -2,7 +2,7 @@
 // turntable videos (with or without alpha), 3D models and the static web page.
 //
 //   node scripts/export.ts <piece|url> [--formats png,cutout,glb] [--out exports/<piece>]
-//        [--size 1600x900] [--angles 8] [--seconds 6] [--fps 30]
+//        [--size 1600x900] [--angles 8] [--seconds 6] [--fps 30] [--bob 10]
 //        [--surface marble|wood|linen|plain|none] [--bg '#f3f1ee'] [--yaw 30] [--tilt 0]
 //
 // <piece> is a folder in examples/ (a dev server is started for it), or a full URL
@@ -27,7 +27,7 @@ const ALL = ['page', 'png', 'cutout', 'sprite', 'mp4', 'gif', 'webm', 'mov', 'ap
 type Format = (typeof ALL)[number];
 
 const args = process.argv.slice(2);
-const USAGE = 'usage: export.ts <piece|url> [--formats png,cutout,glb|all] [--out dir] [--size WxH] [--angles N] [--seconds S] [--fps N] [--surface s] [--bg #hex] [--yaw deg] [--tilt deg]';
+const USAGE = 'usage: export.ts <piece|url> [--formats png,cutout,glb|all] [--out dir] [--size WxH] [--angles N] [--seconds S] [--fps N] [--surface s] [--bg #hex] [--yaw deg] [--tilt deg] [--bob deg]';
 const fail = (msg: string): never => { console.error(`${msg}\n${USAGE}`); process.exit(1); };
 const opt = (k: string, d?: string) => {
   const i = args.indexOf(`--${k}`);
@@ -49,7 +49,7 @@ const out = resolve(opt('out', join(root, 'exports', name))!);
 const sizeArg = opt('size', '1600x900')!;
 if (!/^\d+x\d+$/.test(sizeArg)) fail(`--size must look like 1600x900, got ${sizeArg}`);
 const [W, H] = sizeArg.split('x').map(Number);
-const ANGLES = num('angles', '8', 1), SECONDS = num('seconds', '6', 0.1), FPS = num('fps', '30', 1);
+const ANGLES = num('angles', '8', 1), SECONDS = num('seconds', '6', 0.1), FPS = num('fps', '30', 1), BOB = num('bob', '0', 0);
 for (const k of ['yaw', 'tilt']) { const v = opt(k); if (v !== undefined && !Number.isFinite(Number(v))) fail(`--${k} must be a number`); }
 if (target!.startsWith('http') && formats.includes('web')) fail('--formats web builds this repo\'s site, so it only works with a piece name, not a URL');
 mkdirSync(out, { recursive: true });
@@ -87,7 +87,7 @@ try {
     console.log(`exporting ${name} from ${url}`);
     const b = await launch(W, H);
     try {
-      await b.open(url, 'window.__resin && typeof __step === "function"');
+      await b.open(url, 'window.__resin && __resin.loaded && typeof __step === "function"');
       const tilt = Number(opt('tilt', '0'));
       const yaw0 = Number(opt('yaw', 'NaN'));
       const startYaw = Number.isNaN(yaw0) ? await b.evalJs('__resin.studio.turntable.rotation.y * 180 / Math.PI') : yaw0;
@@ -112,9 +112,11 @@ try {
         rmSync(dir, { recursive: true, force: true }); mkdirSync(dir, { recursive: true });
         const n = Math.round(SECONDS * FPS);
         await pose(startYaw);
-        await b.evalJs(`__resin.setSpin(${(2 * Math.PI) / SECONDS}); true`);
+        // With --bob the camera also rises and dips once over the turn; each frame is posed exactly.
+        await b.evalJs(`__resin.setSpin(${BOB > 0 ? 0 : (2 * Math.PI) / SECONDS}); true`);
         for (let i = 0; i < n; i++) {
           if (i > 0) await b.evalJs(`__step(${1 / FPS})`);
+          if (BOB > 0) await b.evalJs(`__resin.pose(${startYaw + (360 * i) / n}, ${tilt + BOB * Math.sin((2 * Math.PI * i) / n)}); true`);
           await shot(join(dir, `f${String(i).padStart(4, '0')}.png`), matte);
           if (i % 30 === 0) process.stdout.write(`  ${matte ? 'alpha' : 'opaque'} frame ${i}/${n}\n`);
         }
