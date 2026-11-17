@@ -17,13 +17,18 @@ video (with or without alpha), or a 3D file (GLB, USDZ, STL, OBJ).
 
 ## Use the skill
 
-The repo carries its own entry point at `.claude/skills/resin-art/`, so Claude Code
-opened in this folder picks it up. To use it from any project, link it into your
-skills folder:
+Clone it straight into your Claude Code skills folder and install the dependencies
+(three.js, Vite and TypeScript; the export script also uses ffmpeg and a local
+Chrome):
 
 ```sh
-ln -s ~/git-repo/resin-art ~/.claude/skills/resin-art
+git clone https://github.com/lcalmsky/resin-art ~/.claude/skills/resin-art
+cd ~/.claude/skills/resin-art && npm install
 ```
+
+If you keep the repo somewhere else, link it instead:
+`ln -s /path/to/resin-art ~/.claude/skills/resin-art`. Claude Code opened inside the
+repo also picks the skill up from `.claude/skills/resin-art/`.
 
 Then just ask. A sentence is enough, a reference photo is enough, and both together
 work best:
