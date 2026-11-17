@@ -1,0 +1,13 @@
+html, body { margin: 0; height: 100%; background: #e9e6e1; }
+body { display: grid; place-items: center; font: 13px/1.4 ui-sans-serif, system-ui, sans-serif; }
+.card { position: relative; width: min(92vw, calc((100vh - 48px) * 16 / 9)); aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; background: var(--card, #f3f1ee);
+        box-shadow: 0 0 0 1px rgba(40, 34, 26, .08), 0 18px 50px -18px rgba(40, 34, 26, .35); }
+#stage { position: absolute; inset: 0; }
+#stage canvas { display: block; }
+.hint { position: absolute; left: 0; right: 0; bottom: 10px; margin: 0; text-align: center; color: rgba(60, 54, 46, .45); pointer-events: none; letter-spacing: .02em; }
+body { gap: 12px; align-content: center; }
+.tools { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.tools button, .tools select { font: inherit; font-size: 12px; padding: 5px 10px; border-radius: 8px; border: 1px solid rgba(40, 34, 26, .18); background: #f7f5f2; color: #3c362e; cursor: pointer; }
+.tools button:disabled { opacity: .5; cursor: progress; }
+.tools button:focus-visible, .tools select:focus-visible { outline: 2px solid #2bb3cf; outline-offset: 1px; }
+body.capture .hint, body.capture .tools { display: none; }

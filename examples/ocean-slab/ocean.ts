@@ -1,0 +1,82 @@
+// "A piece of the sea": a resin slab with a beach in it. Sand rises toward one
+// corner, the water deepens from clear to teal to blue toward the other, white foam
+// lace marks where the wave breaks, and the top is a creased wave surface that
+// throws glints as the piece turns.
+import * as THREE from 'three';
+import type { PieceDef } from '../../lib/piece.ts';
+import { resin, slab, pigment, rippleField } from '../../lib/resin.ts';
+import { sandMaterial, foamTexture, flat, shell } from '../../lib/inclusions.ts';
+import { contactShadow, caustics } from '../../lib/light.ts';
+import { noise2, fbm, clamp, smooth } from '../../lib/noise.ts';
+
+const W = 3.2, D = 2.5, H = 0.5;
+export const oceanSlab: PieceDef = {
+  name: 'ocean-slab',
+  studio: { elevation: 38, distance: 6.6, target: { x: 0, y: 0.15, z: 0 }, spin: 0.16 },
+  build(s) {
+    const n = noise2(21);
+    // 0 at the beach corner (-x, +z), 1 out at sea (+x, -z), with a wandering shoreline.
+    const sea = (x: number, z: number) => clamp(0.5 + 0.62 * (x / W) - 0.62 * (z / D) + 0.07 * fbm(n, x * 1.3, z * 1.3, 3));
+
+    const ripple = rippleField(7, 0.75);
+    const water = slab({
+      width: W, depth: D, height: H, relief: 0.16, segments: 260,
+      surface: ripple, calm: (x, z) => 0.55 + 0.45 * smooth(0.2, 0.7, sea(x, z)),
+    });
+    pigment(water, [
+      { at: 0.0, color: '#ffffff' },
+      { at: 0.36, color: '#f2fdfb' },
+      { at: 0.48, color: '#8fe8e4' },
+      { at: 0.7, color: '#2cc0dc' },
+      { at: 1.0, color: '#0a86d8' },
+    ], (x, _y, z) => sea(x, z), { swirl: 0.1, seed: 4 });
+    const piece = new THREE.Group();
+    piece.add(new THREE.Mesh(water, resin({ vertexColors: true, thickness: 0.6, tint: '#e8fbff', depth: 6 })));
+
+    // Sand: a body that fills the beach corner almost to the surface and thins to
+    // nothing under the water, with a lumpy top where it was spooned in.
+    const sandTop = (x: number, z: number) => {
+      const k = sea(x, z);
+      return Math.max(0.004, H * 0.5 * (1 - smooth(0.25, 0.6, k)) + 0.035 * fbm(n, x * 4 + 3, z * 4, 3) * (1 - k));
+    };
+    const sand = slab({ width: W - 0.02, depth: D - 0.02, height: 0.5, relief: 1, segments: 120, surface: sandTop });
+    piece.add(new THREE.Mesh(sand, sandMaterial('#d4b98a')));
+
+    // Deep water sits over pigmented resin, not bare table: a blue floor sheet that fades out toward the beach.
+    const deepFloor = new THREE.PlaneGeometry(W - 0.03, D - 0.03, 80, 60).rotateX(-Math.PI / 2).translate(0, 0.006, 0);
+    pigment(deepFloor, [{ at: 0.3, color: '#e6e1d6' }, { at: 0.55, color: '#4fc3d8' }, { at: 1, color: '#1a8fd0' }], (x, _y, z) => sea(x, z), { swirl: 0.15, seed: 8 });
+    piece.add(new THREE.Mesh(deepFloor, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 })));
+
+    // Foam lace along the break, a dense crest with rings that run up the beach.
+    const foamBand = (u: number, v: number) => {
+      const k = sea((u - 0.5) * W, (v - 0.5) * D);
+      return smooth(0.28, 0.4, k) * (1 - smooth(0.42, 0.52, k));
+    };
+    const foam = flat(foamTexture({ band: foamBand, seed: 12, cellScale: 16 }), W - 0.04, D - 0.04, { roughness: 0.4 });
+    foam.position.y = H * 0.72;
+    piece.add(foam);
+    const foam2 = flat(foamTexture({ band: (u, v) => foamBand(u, v + 0.035) * 0.7, seed: 31, cellScale: 24 }), W - 0.04, D - 0.04, { roughness: 0.4 });
+    foam2.position.y = H * 0.56;
+    piece.add(foam2);
+
+    // Two shells half-buried in the sand.
+    const scallop = shell({ ribs: 20, color: '#f6f0e6', band: '#d18a52', seed: 3 });
+    scallop.scale.setScalar(0.75);
+    scallop.position.set(-0.55, sandTop(-0.55, 0.55) + 0.01, 0.55);
+    scallop.rotation.set(-0.25, 0.9, 0.12);
+    const cockle = shell({ ribs: 14, color: '#efe2cf', band: '#c27a45', seed: 9, cup: 0.35, fan: 2.1 });
+    cockle.scale.setScalar(0.42);
+    cockle.position.set(-1.15, sandTop(-1.15, -0.25) + 0.01, -0.25);
+    cockle.rotation.set(0.2, -1.6, -0.1);
+    piece.add(scallop, cockle);
+
+    piece.position.y = 0.001;
+    s.turntable.add(piece);
+    s.turntable.add(contactShadow(W, D, { color: '#6f8f9a', strength: 0.5 }));
+    const light = caustics(W * 1.25, D * 1.25, { color: '#8fe3ff', intensity: 0.1 });
+    light.mesh.position.set(1.1, 0.004, -0.9);
+    s.turntable.add(light.mesh);
+
+    return { update: (t: number) => light.update(t) };
+  },
+};
