@@ -3,7 +3,7 @@
 // can be stepped exactly for checking and capture.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { surfaceLook, type Surface } from './surfaces.ts';
+import { surfaceLook, FLOOR_SIZE, type Surface } from './surfaces.ts';
 
 export interface StudioOptions {
   /** Card and floor colour. Resin shows what is behind it, so this is part of the look. */
@@ -35,7 +35,7 @@ export interface Studio {
   canvas: HTMLCanvasElement;
   /** Starts the loop. `draw(t, dt)` runs before each render. */
   run(draw?: (t: number, dt: number) => void): void;
-  /** Sets the turntable angle (degrees) and optionally tilt; the idle spin keeps going from there. */
+  /** Sets the turntable angle (degrees) and optionally tilts the view up or down (degrees of camera elevation); the idle spin keeps going from there. */
   pose(yawDeg: number, tiltDeg?: number): void;
   setSpin(radPerSec: number): void;
   setSurface(kind: Surface): void;
@@ -67,7 +67,7 @@ export function studio(host: HTMLElement, o: StudioOptions = {}): Studio {
   scene.add(key, new THREE.HemisphereLight('#ffffff', '#d8d2c8', 0.5));
 
   const floorMat = new THREE.MeshStandardMaterial();
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), floorMat);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_SIZE, FLOOR_SIZE), floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.userData.table = true;
   scene.add(floor);
@@ -81,11 +81,17 @@ export function studio(host: HTMLElement, o: StudioOptions = {}): Studio {
   };
   applySurface();
 
-  const camera = new THREE.PerspectiveCamera(o.fov ?? 30, 1, 0.05, 100);
+  const camera = new THREE.PerspectiveCamera(o.fov ?? 30, 1, 0.05, FLOOR_SIZE);
   const target = new THREE.Vector3().copy(o.target ?? { x: 0, y: 0.3, z: 0 });
   const elev = THREE.MathUtils.degToRad(o.elevation ?? 32), dist = o.distance ?? 8;
-  camera.position.set(0, target.y + Math.sin(elev) * dist, target.z + Math.cos(elev) * dist);
-  camera.lookAt(target);
+  // Tilt orbits the camera instead of tipping the turntable: tipped, the shadow and
+  // caustic decals would cut into the floor and show as a hard line through the resin.
+  const placeCamera = (tiltRad: number) => {
+    const e = THREE.MathUtils.clamp(elev + tiltRad, Math.min(elev, THREE.MathUtils.degToRad(12)), Math.max(elev, THREE.MathUtils.degToRad(80)));
+    camera.position.set(target.x, target.y + Math.sin(e) * dist, target.z + Math.cos(e) * dist);
+    camera.lookAt(target);
+  };
+  placeCamera(0);
 
   const turntable = new THREE.Group();
   scene.add(turntable);
@@ -103,7 +109,7 @@ export function studio(host: HTMLElement, o: StudioOptions = {}): Studio {
   ro.observe(host);
 
   // Drag turns the piece; release and it keeps a little momentum, then returns to
-  // the idle spin. Vertical drag tilts it toward the viewer, springing back.
+  // the idle spin. Vertical drag looks from higher or lower, springing back.
   let idle = o.spin ?? 0.18;
   let yaw = THREE.MathUtils.degToRad(o.yaw ?? 0), tilt = 0, yawVel = idle, tiltTarget = 0, dragging = false, lastX = 0, lastY = 0;
   const el = renderer.domElement;
@@ -132,7 +138,8 @@ export function studio(host: HTMLElement, o: StudioOptions = {}): Studio {
       tiltTarget *= Math.max(0, 1 - dt * 1.2);
     }
     tilt += (tiltTarget - tilt) * Math.min(1, dt * 8);
-    turntable.rotation.set(tilt, yaw, 0, 'XYZ');
+    turntable.rotation.set(0, yaw, 0);
+    placeCamera(tilt);
     scene.environmentRotation.y = Math.sin(t * 0.35) * sweep;
   };
 
@@ -164,7 +171,8 @@ export function studio(host: HTMLElement, o: StudioOptions = {}): Studio {
       yaw = THREE.MathUtils.degToRad(yawDeg);
       tilt = tiltTarget = THREE.MathUtils.degToRad(tiltDeg);
       yawVel = idle;
-      turntable.rotation.set(tilt, yaw, 0, 'XYZ');
+      turntable.rotation.set(0, yaw, 0);
+      placeCamera(tilt);
     },
     setSpin(v) { idle = v; yawVel = v; },
     setSurface(kind) { surface = kind; applySurface(); },

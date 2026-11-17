@@ -93,7 +93,7 @@ as fake straight away, and each has a rule below:
   `NeutralToneMapping`, keep it.
 - **Shadows are tinted decals.** `contactShadow()` with the resin's colour, plus
   `caustics()` offset away from the key light for wavy tops. No shadow maps.
-- **Interaction is handling the piece.** Drag turns and tilts it on the turntable,
+- **Interaction is handling the piece.** Drag turns it on the turntable and looks from higher or lower,
   it keeps a little momentum, then returns to a slow idle spin. The light sweeps a
   little so glints travel. No buttons in the card; one faint hint line.
 - **New means new.** If the brief is "like this photo", match the form, tint and

@@ -5,6 +5,8 @@ import { noise2, fbm, rng } from './noise.ts';
 
 export type Surface = 'marble' | 'wood' | 'linen' | 'plain' | 'none';
 export const SURFACES: Surface[] = ['marble', 'wood', 'linen', 'plain', 'none'];
+/** Side of the square floor plane, in world units: wide enough that its far edge stays out of a low view. */
+export const FLOOR_SIZE = 400;
 
 /** Floor colour and texture for a surface. `color` multiplies the map. */
 export function surfaceLook(kind: Surface, backdrop: THREE.Color): { color: THREE.Color; map: THREE.Texture | null; roughness: number } {
@@ -21,7 +23,7 @@ function tile(c: HTMLCanvasElement, units: number): THREE.CanvasTexture {
   t.colorSpace = THREE.SRGBColorSpace;
   // Mirrored, because the noise behind these patterns doesn't tile: plain repeat leaves a seam.
   t.wrapS = t.wrapT = THREE.MirroredRepeatWrapping;
-  t.repeat.set(60 / units, 60 / units);
+  t.repeat.set(FLOOR_SIZE / units, FLOOR_SIZE / units);
   t.anisotropy = 8;
   return t;
 }
