@@ -13,6 +13,9 @@ whatever you need: a web page or embeddable
 component, a PNG, a cutout PNG with no background, a sprite sheet, a turntable
 video (with or without alpha), or a 3D file (GLB, USDZ, STL, OBJ).
 
+<p align="center"><img src="media/seashore-photo.png" width="420" alt="Path-traced still of the seashore piece: a domed resin coaster with sand, scanned shells, a sea star and three stacked foam waves on white marble"></p>
+<p align="center"><sub>The same piece path traced in Blender Cycles (<code>blender/seashore.py</code>, about 40 s on an M-series GPU).</sub></p>
+
 | Seashore | Shells up close | Foam lacing |
 |---|---|---|
 | ![Seashore](media/seashore.png) | ![Scanned scallop, cone and olive shells and a sea star in the sand](media/seashore-closeup.png) | ![White lacing torn open into cells where the wave meets the sand](media/seashore-foam.png) |
@@ -129,6 +132,28 @@ GLB, USDZ, STL, OBJ) and takes URL flags: `?surface=marble|wood|linen|plain|none
 `?bg=%23eef0f2`, `?spin=0.3`, `?yaw=30`, `?still`, `?capture` (hides the hint and
 bar), `?debug` (step time by hand with `__step(seconds)`), `?t=2.5` (freeze time).
 
+## Photoreal stills with Blender
+
+The three.js pieces are real time, so their refraction is a screen-space approximation.
+For a still that should pass as a photograph, `blender/` rebuilds the seashore piece in
+Blender Cycles and path traces it: real refraction and dispersion through the resin,
+depth of field from a 100 mm lens, AgX tone mapping, a studio HDRI and softbox, and CC0
+photo-scanned sand and marble from Poly Haven.
+
+```sh
+brew install --cask blender          # Blender 5.3 or newer
+sh blender/fetch_assets.sh           # sand, marble, wood, HDRI (about 60 MB, CC0)
+blender -b -P blender/seashore.py -- --out exports/photo/seashore.png
+#   [--scale 0.5] [--samples 256] [--table marble|wood] [--yaw -20] [--elev 48] [--dist 0.34] [--exposure -1] [--save]  (--save also writes blender/cache/seashore.blend)
+```
+
+It is built the way a real pour is: sand on the bottom (wet and darker under the
+water), water colour in the layer over it, three white waves stacked at different depths
+with clear resin between them (`blender/lace.py` makes the lacing: a solid crest, holes of
+mixed sizes growing seaward until only threads are left), the shell scans pressed into the
+sand, and a domed clear coat. Rendering uses the Mac's GPU through Metal; the first run
+also compiles shaders and builds the lace masks (cached in `blender/cache/`).
+
 ## Export from the command line
 
 ```sh
@@ -211,6 +236,7 @@ Three rules do most of the work, and `SKILL.md` has the rest:
 | `lib/` | the library above, nine TypeScript files, only dependency `three` |
 | `assets/scans/` | CC0 shell and sea star scans used by the examples, with `CREDITS.md` |
 | `examples/` | `seashore`, `ocean-slab`, `rose-cube`, `flower-coaster` |
+| `blender/` | photoreal stills in Cycles: `seashore.py` (scene), `lace.py` (foam masks), `fetch_assets.sh` (CC0 textures and HDRI) |
 | `scripts/` | `export.ts` (every deliverable), `scans.ts` (find and fetch CC0 scans), `capture.ts` (page screenshots), `cdp.ts` (headless Chrome driver) |
 | `media/` | the images in this README |
 

@@ -22,6 +22,7 @@ one.
 | Blender, Unity, Unreal, three.js scene, a 3D asset | `glb` |
 | iPhone/iPad AR, "view in my room" | `usdz` (plus `glb` for Android) |
 | 3D printing, a mould master | `stl` (resin body only, in mm) |
+| a still that must look like a real photograph (a social post, a hero image) | Blender Cycles still (`blender/seashore.py`, see the README); about 40 s a frame, so stills, not video |
 | "an asset" with no hint whether 2D or 3D | ask (see below) |
 
 ## Asking

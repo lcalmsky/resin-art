@@ -135,5 +135,12 @@ as fake straight away, and each has a rule below:
 - `scripts/scans.ts search <word…> | fetch <slug…>` — find and download CC0 Smithsonian
   scans of shells and coral into `assets/scans/` with credits (`npm run scans`)
 
+- `blender/seashore.py` — a photoreal still of a piece, path traced in Blender Cycles
+  (`blender -b -P blender/seashore.py -- --out …`, after `sh blender/fetch_assets.sh`).
+  Use it when a still has to pass as a photograph (a post, a hero image); real-time
+  three.js stays the choice for pages, video turns and 3D files. Copy its structure for
+  a new piece: real layer order, stacked foam masks from `blender/lace.py`, scans
+  pressed into the sand, shadow rays passed through the resin.
+
 Runs with Node ≥ 22.18 (TypeScript is stripped natively) plus ffmpeg for encoding;
 it finds a local Chrome/Chromium or uses `$CHROME`.
