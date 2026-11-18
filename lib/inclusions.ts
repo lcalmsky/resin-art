@@ -67,25 +67,44 @@ function grainTexture(): THREE.CanvasTexture {
 
 // ---------------------------------------------------------------- foam lace
 
-/** White lacing where waves break: a band of cellular foam that is dense at the
- * crest line and breaks into isolated rings as it runs up the shore.
- * `band(u, v)` → 0..1 says where foam lives on the texture (u along shore, v across). */
-export function foamTexture(o: { size?: number; seed?: number; cellScale?: number; band?: (u: number, v: number) => number } = {}): THREE.CanvasTexture {
-  const S = o.size ?? 1024, [c, g] = canvas(S);
-  const cl = cells(o.seed ?? 9), n = noise2((o.seed ?? 9) + 1);
+/** White lacing where waves break, as it forms in a real pour: a white sheet where
+ * `band(u, v)` is 1, with holes that grow as `band` falls until only threads are left
+ * between them, and the threads thin out and stop. Alpha is binary (use with `flat()`). */
+export function foamTexture(o: {
+  size?: number; seed?: number; cellScale?: number;
+  band?: (u: number, v: number) => number;
+  /** Cell space for (u, v): [across the wave, along it], default [v, u]; `cellScale` is
+   * cells per unit of it. Cells are stretched across the wave, so lace streaks the way
+   * white resin is blown out from the shore. Pass world units to size cells in cm. */
+  coords?: (u: number, v: number) => [number, number];
+} = {}): THREE.CanvasTexture {
+  const S = o.size ?? 1024, [c, g] = canvas(S), seed = o.seed ?? 9;
+  const big = cells(seed), small = cells(seed + 7), n = noise2(seed + 1), w = noise2(seed + 2);
   const band = o.band ?? ((u, v) => smooth(0.25, 0.45, v) * (1 - smooth(0.55, 0.8, v)));
+  const coords = o.coords ?? ((u, v) => [v, u]);
   const img = g.createImageData(S, S), sc = o.cellScale ?? 26;
+  // Real lacing is white resin torn open by heat, not a net. Where the white is thick it
+  // is a sheet with a few small holes; seaward the holes grow, crowd together and leave
+  // only threads between them, and the threads thin out and stop. Holes are stretched
+  // across the wave, the way the heat gun pushes them.
   for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
     const u = x / S, v = y / S;
-    const wob = 0.08 * fbm(n, u * 4, v * 4, 3);
-    const b = band(u, v + wob);
-    const [f1, f2] = cl(u * sc, v * sc * 1.6);
-    const edge = 1 - smooth(0.0, 0.07 + 0.12 * b, f2 - f1);
-    const solid = smooth(0.85, 1.0, b + 0.15 * fbm(n, u * 9, v * 9, 2)) * 0.9;
-    const a = clamp(Math.max(edge * smooth(0.05, 0.4, b), solid));
+    const d = clamp(band(u, v + 0.02 * fbm(n, u * 5, v * 5, 3)));
+    let white = false;
+    if (d > 0.01) {
+      const [s0, t0] = coords(u, v);
+      const s = s0 + 0.025 * fbm(w, u * 8, v * 8, 3), t = t0 + 0.025 * fbm(w, u * 8 + 7, v * 8, 3);
+      const open = 1 - d, patch = 0.5 + fbm(n, u * 12 + 3, v * 12, 2);
+      const [b1, b2] = big(s * sc * 0.6, t * sc);
+      const [s1] = small(s * sc * 1.7, t * sc * 2.2);
+      const rBig = 0.05 + 0.72 * Math.pow(open, 0.8) + 0.12 * patch, rSmall = 0.04 + 0.25 * open;
+      const sheet = b1 > rBig && (s1 > rSmall || open < 0.15);
+      const thread = (0.11 * d + 0.045) * (0.7 + 0.6 * patch) * smooth(0, 0.3, d + 0.2 * (patch - 0.5));
+      white = sheet || b2 - b1 < thread;
+    }
     const i = (y * S + x) * 4;
     img.data[i] = img.data[i + 1] = img.data[i + 2] = 250;
-    img.data[i + 3] = a * 255;
+    img.data[i + 3] = white ? 255 : 0;
   }
   g.putImageData(img, 0, 0);
   return texture(c);

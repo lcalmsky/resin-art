@@ -14,6 +14,11 @@ export interface ScanOptions {
   rotation?: [number, number, number];
   /** Override the scan's surface: lower is glossier. Scans are often captured matte. */
   roughness?: number;
+  /** Multiplies the scan's colour: museum specimens are often faded or grey, and a
+   * tint brings them back to the colour they have on a beach without losing the
+   * surface detail in the texture. A hex or named colour is read as sRGB; an [r, g, b]
+   * array is linear and may go above 1 to lighten a dark scan. */
+  tint?: THREE.ColorRepresentation | [number, number, number];
 }
 
 /**
@@ -40,6 +45,7 @@ export function scan(url: string, o: ScanOptions): THREE.Group {
       for (const mat of mats) {
         mat.transparent = false; mat.opacity = 1;
         if (o.roughness !== undefined && 'roughness' in mat) mat.roughness = o.roughness;
+        if (o.tint !== undefined && 'color' in mat) mat.color.multiply(Array.isArray(o.tint) ? new THREE.Color().setRGB(...o.tint) : new THREE.Color(o.tint));
         mat.envMapIntensity = 1;
       }
     });

@@ -9,11 +9,13 @@ Each example is one such module plus a two-line `main.ts` that calls
 ## Seashore — `examples/seashore`
 
 The round version of the ocean piece and the showcase example. `disc()` gives a
-wandering circular footprint with a wave top and a rolled rim. The sea axis is the
+wandering circular footprint with a nearly flat top and a rolled rim. The sea axis is the
 distance from a point beyond the rim on the beach side, so the shoreline curves like
-a bay instead of running straight across. Keep the water pigment clear until the sand
-has run out, or thin sand under teal reads green. Washed-up things (shells, a
-starfish, pearls, sand-coloured pebbles) sit on `sandTop(x, z)` and stay inside
+a bay instead of running straight across. The colour is in the floor sheet and the
+clear coat has only a breath of tint, so the lacing stays white. Foam is two waves:
+one thick where water meets sand, one thinner further out on a lower layer, with
+`coords` = [distance from the bay's centre, angle × shoreline radius]. Washed-up
+things (scanned shells and sea star, pearls, sand-coloured pebbles) sit on `sandTop(x, z)` and stay inside
 `discRadius()` with a margin, so nothing pokes through the rim. Portrait framing
 (1080x1350) needs a longer camera distance than landscape, since the fov is vertical.
 
@@ -21,16 +23,17 @@ starfish, pearls, sand-coloured pebbles) sit on `sandTop(x, z)` and stay inside
 
 1. Define `sea(x, z)` → 0 at the beach corner, 1 out at sea, with fbm noise so the
    shoreline wanders. Everything below keys off this one function.
-2. **Pigment floor**: a plane just above y = 0, `pigment()` from sand-beige to deep
-   blue along `sea`. This is what makes deep water read as deep.
+2. **Pigment floor**: a plane just above y = 0, `pigment()` from sand-beige through
+   turquoise to deep teal along `sea`. All the water's colour lives here.
 3. **Sand**: `slab({ height: 0.5, relief: 1, surface: sandTop })` — the trick is
    `height 0.5, relief 1` makes the top exactly `surface(x, z)`. Fill to ~½ of the
    resin height at the beach, thinning to zero under the sea. `sandMaterial()`.
 4. **Shells** half-buried at `sandTop(x, z) + small`, tilted, one large and one small.
-5. **Foam lace**: two `flat(foamTexture({ band }))` sheets at 0.72 H and 0.56 H.
-   `band(u, v)` maps texture UV back to world and peaks just seaward of the shore.
-6. **Water body**: `slab({ relief: 0.16, surface: rippleField(seed, 0.75) })` with
-   `calm` lower over the beach; `pigment()` clear → teal → blue along `sea`;
+5. **Foam lace**: two `flat(foamTexture({ band, coords }))` sheets at 0.72 H and
+   0.42 H. `band(u, v)` maps texture UV back to world: 1 where water meets sand,
+   fading seaward. `coords` are world units across and along the shore.
+6. **Water body**: `slab({ relief: 0.02, surface: rippleField(seed, 0.75) })`, a
+   cured glassy top; `pigment()` from clear to a pale aqua only;
    `resin({ vertexColors: true })`.
 7. Table: `contactShadow` tinted blue-grey, `caustics` offset back-right.
 

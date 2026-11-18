@@ -1,7 +1,7 @@
 // "A piece of the sea": a resin slab with a beach in it. Sand rises toward one
 // corner, the water deepens from clear to teal to blue toward the other, white foam
-// lace marks where the wave breaks, and the top is a creased wave surface that
-// throws glints as the piece turns.
+// lace marks where the wave breaks, and the top is cured glass with only a faint
+// swell left in it.
 import * as THREE from 'three';
 import type { PieceDef } from '../../lib/piece.ts';
 import { resin, slab, pigment, rippleField } from '../../lib/resin.ts';
@@ -21,18 +21,18 @@ export const oceanSlab: PieceDef = {
 
     const ripple = rippleField(7, 0.75);
     const water = slab({
-      width: W, depth: D, height: H, relief: 0.16, segments: 260,
-      surface: ripple, calm: (x, z) => 0.15 + 0.85 * smooth(0.25, 0.75, sea(x, z)),
+      // Resin levels itself before it cures; the waves live in the lacing, not the top.
+      width: W, depth: D, height: H, relief: 0.02, segments: 200, surface: ripple,
     });
+    // Only a breath of tint in the clear coat: the colour is in the layer under the
+    // foam, so the lace on top of it stays white.
     pigment(water, [
       { at: 0.0, color: '#ffffff' },
-      { at: 0.36, color: '#f2fdfb' },
-      { at: 0.48, color: '#8fe8e4' },
-      { at: 0.7, color: '#2cc0dc' },
-      { at: 1.0, color: '#0a86d8' },
+      { at: 0.5, color: '#f4fefc' },
+      { at: 1.0, color: '#cdeff2' },
     ], (x, _y, z) => sea(x, z), { swirl: 0.1, seed: 4 });
     const piece = new THREE.Group();
-    piece.add(new THREE.Mesh(water, resin({ vertexColors: true, thickness: 0.6, tint: '#e8fbff', depth: 6 })));
+    piece.add(new THREE.Mesh(water, resin({ vertexColors: true, thickness: 0.45, tint: '#eefffc', depth: 6 })));
 
     // Sand: a body that fills the beach corner almost to the surface and thins to
     // nothing under the water, with a lumpy top where it was spooned in.
@@ -45,19 +45,25 @@ export const oceanSlab: PieceDef = {
 
     // Deep water sits over pigmented resin, not bare table: a blue floor sheet that fades out toward the beach.
     const deepFloor = new THREE.PlaneGeometry(W - 0.03, D - 0.03, 80, 60).rotateX(-Math.PI / 2).translate(0, 0.006, 0);
-    pigment(deepFloor, [{ at: 0.3, color: '#e6e1d6' }, { at: 0.55, color: '#4fc3d8' }, { at: 1, color: '#1a8fd0' }], (x, _y, z) => sea(x, z), { swirl: 0.15, seed: 8 });
+    pigment(deepFloor, [{ at: 0.3, color: '#e6e1d6' }, { at: 0.44, color: '#c4f3ea' }, { at: 0.56, color: '#5fd6d2' }, { at: 0.75, color: '#1ba6c6' }, { at: 1, color: '#0b6494' }], (x, _y, z) => sea(x, z), { swirl: 0.15, seed: 8 });
     piece.add(new THREE.Mesh(deepFloor, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 })));
 
-    // Foam lace along the break, a dense crest with rings that run up the beach.
-    const foamBand = (u: number, v: number) => {
+    // Foam lace: thick where water meets sand, torn open seaward; a thinner second wave
+    // further out on a lower layer. Cell space is world units across and along the shore.
+    const wave = (at: number, width: number, peak: number) => (u: number, v: number) => {
       const k = sea((u - 0.5) * W, (v - 0.5) * D);
-      return smooth(0.28, 0.4, k) * (1 - smooth(0.42, 0.52, k));
+      return peak * smooth(at - 0.025, at, k) * (1 - smooth(at, at + width, k));
     };
-    const foam = flat(foamTexture({ band: foamBand, seed: 12, cellScale: 16 }), W - 0.04, D - 0.04, { roughness: 0.4 });
+    const ax = 0.62 / W, az = -0.62 / D, al = Math.hypot(ax, az);
+    const coords = (u: number, v: number): [number, number] => {
+      const x = (u - 0.5) * W, z = (v - 0.5) * D;
+      return [(x * ax + z * az) / al, (x * -az + z * ax) / al];
+    };
+    const foam = flat(foamTexture({ band: wave(0.36, 0.2, 1), coords, seed: 12, cellScale: 20, size: 2048 }), W - 0.04, D - 0.04, { roughness: 0.35 });
     foam.position.y = H * 0.72;
     piece.add(foam);
-    const foam2 = flat(foamTexture({ band: (u, v) => foamBand(u, v + 0.035) * 0.7, seed: 31, cellScale: 24 }), W - 0.04, D - 0.04, { roughness: 0.4 });
-    foam2.position.y = H * 0.56;
+    const foam2 = flat(foamTexture({ band: wave(0.62, 0.12, 0.6), coords, seed: 31, cellScale: 24, size: 2048 }), W - 0.04, D - 0.04, { roughness: 0.35 });
+    foam2.position.y = H * 0.42;
     piece.add(foam2);
 
     // Two real shells half-buried in the sand: CC0 Smithsonian scans (assets/scans/CREDITS.md).

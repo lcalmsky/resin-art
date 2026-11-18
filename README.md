@@ -3,23 +3,23 @@
 A Claude skill and a small TypeScript library for epoxy-resin art rendered with
 three.js. Ask for a piece in plain words, or hand over a photo of one, and you get a
 real-time 3D piece of cured resin: water you can see through, sand and shells set
-inside, glints that travel across a wave top as it turns.
+inside, white foam lacing, highlights that slide across the glassy top as it turns.
 
 <p align="center"><img src="media/seashore.gif" width="420" alt="A round resin piece with a beach inside, turning on a marble table"></p>
 
-The shells are real: CC0 photogrammetry scans of museum specimens from Smithsonian
-Open Access, set into procedural sand and water. One piece definition then becomes
+The shells and the sea star are real: CC0 photogrammetry scans of museum specimens
+from Smithsonian Open Access, set into procedural sand, water and foam lacing. One piece definition then becomes
 whatever you need: a web page or embeddable
 component, a PNG, a cutout PNG with no background, a sprite sheet, a turntable
 video (with or without alpha), or a 3D file (GLB, USDZ, STL, OBJ).
 
-| Seashore | Up close | Ocean slab |
+| Seashore | Shells up close | Foam lacing |
 |---|---|---|
-| ![Seashore](media/seashore.png) | ![Scanned scallop, cone and olive shells and a starfish in the sand](media/seashore-closeup.png) | ![Ocean slab](media/ocean-slab.png) |
+| ![Seashore](media/seashore.png) | ![Scanned scallop, cone and olive shells and a sea star in the sand](media/seashore-closeup.png) | ![White lacing torn open into cells where the wave meets the sand](media/seashore-foam.png) |
 
-| Rose cube | Flower coaster |
-|---|---|
-| ![Rose cube](media/rose-cube.png) | ![Flower coaster](media/flower-coaster.png) |
+| Ocean slab | Rose cube | Flower coaster |
+|---|---|---|
+| ![Ocean slab](media/ocean-slab.png) | ![Rose cube](media/rose-cube.png) | ![Flower coaster](media/flower-coaster.png) |
 
 ## Use the skill
 
@@ -54,10 +54,23 @@ scans for shells and coral instead of modelling them (`references/assets.md`). I
 builds one piece first, shows you a still, and waits for a yes before making a set or
 exporting.
 
+## What makes it read as real resin
+
+Side by side with photos of real ocean pours, three things gave a render away, and
+the library now does each the way a real pour does:
+
+- **A flat, glassy top.** Resin levels itself before it cures. The waves are in the
+  white lacing under the top, not in a crumpled surface.
+- **Lacing, not a net.** White resin torn open by a heat gun: a solid sheet at the
+  shore with holes that grow seaward until only threads are left, stretched across
+  the wave.
+- **Colour under the foam.** The clear coat is barely tinted and the turquoise is in
+  the layer below, so the lace stays white instead of cyan.
+
 ## Real shells from free scans
 
 Procedural shells give themselves away: too smooth, too even, too symmetric. So the
-pieces use photogrammetry scans of real shells from
+pieces use photogrammetry scans of real shells and a sea star from
 [Smithsonian Open Access](https://3d.si.edu), which are CC0, in the web GLB packaging
 of [codepawl/smithsonian-3d-glb](https://huggingface.co/datasets/codepawl/smithsonian-3d-glb).
 A script searches and downloads them:
@@ -74,9 +87,10 @@ cone.position.set(x, sandTop(x, z) - 0.03, z);  // placed at once, fills in when
 return { update, ready: ready(cone) };           // exports wait for it
 ```
 
-There is no starfish scan, so `starfish()` is procedural: tapering domed arms with
-rows of tubercles. `references/assets.md` lists other free sources (Poly Haven,
-ambientCG, Sketchfab CC0) and where to look at real pieces for reference.
+Museum specimens can be grey or faded; `tint` multiplies a scan's colour, so the
+grey Linckia sea star becomes a sun-bleached tan. `references/assets.md` lists other
+free sources (Poly Haven, ambientCG, Sketchfab CC0) and where to look at real pieces
+for reference.
 
 ## What you can get
 
@@ -195,12 +209,12 @@ Three rules do most of the work, and `SKILL.md` has the rest:
 |---|---|
 | `SKILL.md`, `references/` | the skill: workflow, rules, and guides for style, pieces, inclusions, outputs, verification and video |
 | `lib/` | the library above, nine TypeScript files, only dependency `three` |
-| `assets/scans/` | CC0 shell scans used by the examples, with `CREDITS.md` |
+| `assets/scans/` | CC0 shell and sea star scans used by the examples, with `CREDITS.md` |
 | `examples/` | `seashore`, `ocean-slab`, `rose-cube`, `flower-coaster` |
 | `scripts/` | `export.ts` (every deliverable), `scans.ts` (find and fetch CC0 scans), `capture.ts` (page screenshots), `cdp.ts` (headless Chrome driver) |
 | `media/` | the images in this README |
 
 ## License
 
-Code: MIT. Shell scans in `assets/scans/`: CC0, Smithsonian Institution (see
+Code: MIT. Scans in `assets/scans/`: CC0, Smithsonian Institution (see
 `assets/scans/CREDITS.md`); not endorsed by the Smithsonian.

@@ -126,7 +126,9 @@ function exportRoot(s: Studio, format: ModelFormat): THREE.Group {
   s.turntable.traverse((obj) => {
     if (obj.userData.table || !(obj as THREE.Mesh).isMesh || !visibleChain(obj)) return;
     const mesh = obj as THREE.Mesh;
-    const mat = mesh.material as THREE.Material;
+    // Several materials on one mesh (a disc's top and wall) differ only in on-screen
+    // refraction; exporters take one (USDZ skips array materials altogether).
+    const mat = (Array.isArray(mesh.material) ? mesh.material[0] : mesh.material) as THREE.Material;
     if (format === 'stl' && !isResin(mat)) return;
     const local = new THREE.Matrix4().multiplyMatrices(inv, mesh.matrixWorld);
     const material = exportMaterial(mat, format);

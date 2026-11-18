@@ -32,7 +32,7 @@ in distinct layers, and sharp glints that move as the piece turns.
 - Marble veins soft grey, about 1 vein per piece width, low contrast. They exist to
   show refraction, not to be looked at.
 - Key light from the upper left-front, so caustics fall back-right.
-- The environment's key sweeps ±25° slowly so glints travel across a wavy top.
+- The environment's key sweeps ±25° slowly so highlights travel across the glassy top.
 
 ## Composition
 

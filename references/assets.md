@@ -41,7 +41,10 @@ npm run scans -- fetch conus-textile-c29a9ede               # download to assets
 
 Search by common words and by genus names (`pecten`, `mimachlamys`, `conus`,
 `oliva`, `cypraea`, `murex`, `cardium`, `corallium`, `acropora`): titles are mostly
-scientific names. There is no starfish scan; `starfish()` is the procedural one.
+scientific names. For sea stars search `linckia` and `acanthaster`; `starfish` and
+`asteroidea` find nothing. Museum specimens are often grey or faded: `tint` in
+`scan()` multiplies the colour, and an `[r, g, b]` above 1 lightens a dark scan
+(`[2.0, 1.18, 0.68]` turns the grey Linckia a sun-bleached tan).
 
 Then in the piece:
 
@@ -63,8 +66,12 @@ return { update, ready: ready(s1) };             // export and capture wait for 
   a 10 cm piece are 1–2.5 cm: 0.35–0.8 units.
 - **Keep away from the rim.** Inside a quarter of the radius from the edge, the side
   wall refracts a second copy of the shell.
-- **Calm the water over them.** A wavy top over a shell melts it. Lower the relief
-  where the sand is (`calm` in `slab()`/`disc()`).
+- **Keep the top flat.** Resin levels before it cures, so a real piece has a glassy
+  top with at most a faint swell (`relief` about 0.02). A wavy top melts the shells
+  under it and reads as crumpled plastic film.
+- **Close-ups.** Frame the whole piece, or crop the bottom off: where the resin runs
+  past the frame edge, three.js samples refraction from outside the screen and smears
+  the edge pixels into vertical streaks.
 - **Weight.** `fetch` takes the 20% LOD (`--tier lod2`, about 30k triangles and
   0.1–0.5 MB), which looks the same as the full scan at shell size and keeps exported
   GLB and USDZ files small. Use `--tier lod1` or `full` only for a shell filling the frame.

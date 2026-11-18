@@ -32,8 +32,16 @@ new kinds by drawing with the local `petal()` helper (length, width, angle, tip)
 
 - `sandMaterial(colour)` computes grains from world position in the shader, so walls
   and tops share one grain without UV stretching.
-- `foamTexture({ band })` is cellular noise (F2 − F1) masked by a band function; the
-  band is solid at its peak and breaks into rings at its edges.
+- `foamTexture({ band, coords, cellScale })` is lacing the way it forms in a real
+  pour: a white sheet where `band` is 1, with holes that grow seaward until only
+  threads are left between them, then the threads thin out and stop. Not a net of
+  even cells: that reads as chicken wire. Pass `coords` in world units, [across the
+  wave, along it], so cells have a real size (about 20 per unit, 1.5 mm) and stretch
+  across the wave. Measure along the shore at a fixed radius or offset, or moving
+  across the wave also slides along it and the holes shear sideways.
+- Put the colour under the foam, not in the clear coat. A tinted resin body tints
+  everything under it, the lace included, which then reads cyan instead of white.
+  Keep the body nearly clear and pigment the floor sheet, as in a real layered pour.
 
 ## Shells, starfish, stones
 
@@ -47,7 +55,8 @@ as real at a glance. The procedural ones are the fallback:
   large `height` give a slender turritella; `growth` near 1.9 and a small `height` a
   squat top shell.
 - `starfish()`: tapering domed arms with rows of tubercles, lighter on the bumps,
-  darker in the grooves. There is no starfish scan, so this is the one to use.
+  darker in the grooves. Prefer the `linckia-laevigata` scan with a `tint`; a
+  procedural star looks moulded next to scanned shells.
 - `pebbles()`: matte, irregular stones and shell grit. Keep them matte: glossy ones
   read as water drops under the resin.
 

@@ -1,10 +1,10 @@
 // "A day at the beach": a round pour with the whole shore in it. A crescent of sand
-// with shells, a starfish and a few pearls, foam lace where the wave breaks, and the
-// water deepening from glass-clear to teal to deep blue under a creased wave top.
+// with scanned shells and a sea star, a few pearls, foam lace where the wave breaks, and the
+// water deepening from glass-clear to turquoise to teal under a cured, glassy top.
 import * as THREE from 'three';
 import type { PieceDef } from '../../lib/piece.ts';
 import { resin, disc, discRadius, pigment, rippleField } from '../../lib/resin.ts';
-import { sandMaterial, foamTexture, flat, starfish, pebbles, beads } from '../../lib/inclusions.ts';
+import { sandMaterial, foamTexture, flat, pebbles, beads } from '../../lib/inclusions.ts';
 import { scan, ready } from '../../lib/assets.ts';
 import { contactShadow, caustics } from '../../lib/light.ts';
 import { noise2, fbm, clamp, smooth, rng } from '../../lib/noise.ts';
@@ -23,20 +23,21 @@ export const seashore: PieceDef = {
     const inside = (x: number, z: number, m = 0.97) => Math.hypot(x, z) < rim(Math.atan2(z, x)) * m;
 
     const water = disc({
-      radius: R, height: H, relief: 0.12, wander: WANDER, seed: SEED,
-      surface: rippleField(9, 0.7), calm: (x, z) => 0.12 + 0.88 * smooth(0.25, 0.8, sea(x, z)),
+      // Resin levels itself before it cures: the top is glass with only a faint swell
+      // left in it, and the waves live in the white lacing, not in the surface.
+      radius: R, height: H, relief: 0.018, wander: WANDER, seed: SEED, surface: rippleField(9, 0.7), meniscus: 0.06,
     });
     pigment(water, [
+      // The clear coat carries only a breath of tint, as in a real pour: the colour is
+      // in the layer under the foam, so the white lace on top of it stays white.
       { at: 0.0, color: '#ffffff' },
-      { at: 0.38, color: '#f4fefc' },
-      { at: 0.46, color: '#eafcfb' },
-      { at: 0.56, color: '#8ee6e6' },
-      { at: 0.72, color: '#2fbfe0' },
-      { at: 0.9, color: '#0d8fdc' },
-      { at: 1.0, color: '#0874cc' },
+      { at: 0.5, color: '#f4fefc' },
+      { at: 0.75, color: '#dcf6f4' },
+      { at: 1.0, color: '#c4ecf0' },
     ], (x, _y, z) => sea(x, z), { swirl: 0.11, seed: 6 });
     const piece = new THREE.Group();
-    piece.add(new THREE.Mesh(water, resin({ vertexColors: true, thickness: 0.55, tint: '#eafcff', depth: 6 })));
+    const clear = { vertexColors: true, tint: '#eefffc', depth: 6 };
+    piece.add(new THREE.Mesh(water, [resin({ ...clear, thickness: 0.38 }), resin({ ...clear, thickness: 0.06 })]));
 
     const sandTop = (x: number, z: number) => {
       const k = sea(x, z);
@@ -51,28 +52,38 @@ export const seashore: PieceDef = {
     piece.add(new THREE.Mesh(sand, sandMat));
 
     const floor = new THREE.CircleGeometry(R * 0.98, 160).rotateX(-Math.PI / 2).translate(0, 0.006, 0);
-    pigment(floor, [{ at: 0.44, color: '#eef0ea' }, { at: 0.58, color: '#7fd8e2' }, { at: 0.7, color: '#3fbcdc' }, { at: 0.85, color: '#1689d2' }, { at: 1, color: '#0a62b8' }], (x, _y, z) => sea(x, z), { swirl: 0.15, seed: 8 });
+    pigment(floor, [{ at: 0.4, color: '#eef0ea' }, { at: 0.47, color: '#c4f3ea' }, { at: 0.56, color: '#6ddbd4' }, { at: 0.68, color: '#29bccb' }, { at: 0.82, color: '#1592b8' }, { at: 1, color: '#0b5f8e' }], (x, _y, z) => sea(x, z), { swirl: 0.15, seed: 8 });
     piece.add(new THREE.Mesh(floor, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 })));
 
-    // Foam: a lacy crest on the break and a fainter wash running up the beach.
+    // Foam: white resin blown out from the shore. Thick right where water meets sand,
+    // torn into lace as it spreads seaward; a second, thinner wave poured further out
+    // on a lower layer, so the two sit at different depths.
     const S = R * 2;
-    const band = (shift: number) => (u: number, v: number) => {
-      const x = (u - 0.5) * S, z = (v - 0.5) * S;
-      if (!inside(x, z, 0.96)) return 0;
-      const k = sea(x, z) + shift;
-      return smooth(0.3, 0.38, k) * (1 - smooth(0.4, 0.47, k));
+    const toWorld = (u: number, v: number) => [(u - 0.5) * S, (v - 0.5) * S];
+    const wave = (at: number, width: number, peak: number) => (u: number, v: number) => {
+      const [x, z] = toWorld(u, v);
+      if (!inside(x, z, 0.965)) return 0;
+      const k = sea(x, z);
+      return peak * smooth(at - 0.025, at, k) * (1 - smooth(at, at + width, k));
     };
-    const foam = flat(foamTexture({ band: band(0), seed: 12, cellScale: 30, size: 1536 }), S, S, { roughness: 0.4 });
-    foam.position.y = H * 0.74;
-    const foam2 = flat(foamTexture({ band: (u, v) => band(0.05)(u, v) * 0.55, seed: 31, cellScale: 40, size: 1536 }), S, S, { roughness: 0.4 });
-    foam2.position.y = H * 0.55;
+    // Cell space in world units: across the wave = distance from the bay's centre,
+    // along it = arc length at the shoreline's radius (a fixed radius, so moving across
+    // the wave doesn't also slide along it). cellScale is cells per unit (1 unit = 3 cm).
+    const coords = (u: number, v: number): [number, number] => {
+      const [x, z] = toWorld(u, v);
+      return [Math.hypot(x + 1.5, z - 1.5), Math.atan2(z - 1.5, x + 1.5) * 1.9];
+    };
+    const foam = flat(foamTexture({ band: wave(0.345, 0.24, 1), coords, seed: 12, cellScale: 20, size: 2048 }), S, S, { roughness: 0.35 });
+    foam.position.y = H * 0.72;
+    const foam2 = flat(foamTexture({ band: wave(0.62, 0.14, 0.6), coords, seed: 31, cellScale: 24, size: 2048 }), S, S, { roughness: 0.35 });
+    foam2.position.y = H * 0.42;
     piece.add(foam, foam2);
 
     // Things washed up on the sand, half sunk into it the way they settle in a real pour.
     const onSand = (o: THREE.Object3D, x: number, z: number, sink = 0) => { o.position.set(x, sandTop(x, z) - sink, z); piece.add(o); };
     // Real shells: CC0 photogrammetry scans from the Smithsonian (assets/scans/CREDITS.md).
-    const shellScan = (file: string, size: number, rotation: [number, number, number], x: number, z: number, yaw: number, sink: number) => {
-      const g = scan(new URL(`../../assets/scans/${file}.glb`, import.meta.url).href, { size, rotation, roughness: 0.45 });
+    const shellScan = (file: string, size: number, rotation: [number, number, number], x: number, z: number, yaw: number, sink: number, tint?: [number, number, number]) => {
+      const g = scan(new URL(`../../assets/scans/${file}.glb`, import.meta.url).href, { size, rotation, roughness: 0.45, tint });
       g.rotation.y = yaw;
       onSand(g, x, z, sink);
       return g;
@@ -84,12 +95,13 @@ export const seashore: PieceDef = {
       shellScan('conus-textile-c29a9ede', 0.52, [0, 0, 0], -1.05, 0.72, 0.9, 0.03),
       shellScan('oliva-porphyria-f6b58975', 0.36, [0, 0, Math.PI / 2], 0.08, 1.02, -0.6, 0.03),
     ];
-    const star = starfish({ color: '#c47c4c', seed: 4 });
-    star.scale.setScalar(0.58); star.rotation.y = 0.5;
-    onSand(star, -0.62, 0.38, 0.015);
+    // A real sea star too (Linckia laevigata). The museum specimen is grey; the tint
+    // turns it the sun-bleached tan of one picked up off the sand.
+    const star = shellScan('linckia-laevigata-aff2c3e5', 0.72, [0, 0, 0], -0.5, 0.36, 0.5, 0.015, [2.0, 1.18, 0.68]);
+    shells.push(star);
 
     const r = rng(17);
-    const keepOut = [[-0.42, 0.92, 0.42], [-0.62, 0.38, 0.36], [-1.05, 0.72, 0.32], [-1.2, 0.18, 0.28], [0.08, 1.02, 0.22]];
+    const keepOut = [[-0.42, 0.92, 0.42], [-0.5, 0.36, 0.38], [-1.05, 0.72, 0.32], [-1.2, 0.18, 0.28], [0.08, 1.02, 0.22]];
     const free = (x: number, z: number) => keepOut.every(([cx, cz, rr]) => Math.hypot(x - cx, z - cz) > rr);
     const pearls: THREE.Vector3[] = [], sizes: number[] = [];
     for (let i = 0; pearls.length < 4 && i < 600; i++) {

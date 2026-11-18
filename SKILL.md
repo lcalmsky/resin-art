@@ -1,13 +1,13 @@
 ---
 name: resin-art
-description: Build epoxy-resin art pieces with three.js and TypeScript — ocean pours with sand, foam lace and a wavy top, clear cubes with a rose or a dandelion inside, pressed-flower coasters, photo trays with shells and pearls — and deliver them as a web page or embeddable component, PNG with or without background (cutout), sprite sheets, turntable video (MP4, GIF, or with alpha as MOV/WebM/APNG), or 3D files (GLB, USDZ for AR, STL for printing). Use this whenever someone asks for resin art, epoxy art, a "bottled ocean"/바다 한조각 piece, a flower or object cast in a clear block, a pressed-flower coaster or tray, a 레진아트 component, render, image asset, 누끼, video or 3D model, or "make it look like this resin photo" — even if they never say "three.js" or "3D".
+description: Build epoxy-resin art pieces with three.js and TypeScript — ocean pours with sand and white foam lacing, clear cubes with a rose or a dandelion inside, pressed-flower coasters, photo trays with shells and pearls — and deliver them as a web page or embeddable component, PNG with or without background (cutout), sprite sheets, turntable video (MP4, GIF, or with alpha as MOV/WebM/APNG), or 3D files (GLB, USDZ for AR, STL for printing). Use this whenever someone asks for resin art, epoxy art, a "bottled ocean"/바다 한조각 piece, a flower or object cast in a clear block, a pressed-flower coaster or tray, a 레진아트 component, render, image asset, 누끼, video or 3D model, or "make it look like this resin photo" — even if they never say "three.js" or "3D".
 ---
 
 # Resin art
 
 Pieces of cured epoxy, rendered in real time: a transmissive, refractive body with
 things set inside it, on a table, under softbox light, turning slowly. The look
-comes from what the resin does to light — refraction, glints on a wavy top,
+comes from what the resin does to light — refraction, highlights on a glassy top,
 tinted depth, coloured shadow — so most of the work is materials and composition,
 not modelling.
 
@@ -40,7 +40,10 @@ as fake straight away, and each has a rule below:
 - inclusions that are flat vector clip-art, or float in mid-air with no layer
 - shells and starfish that look modelled: smooth, evenly coloured, too symmetric
 - one uniform tint instead of colour that deepens with thickness and swirls
-- a wave top that is a smooth sine bump, or so fine it reads as noise
+- a wavy, crumpled top: cured resin levels itself flat and glassy; the waves are in
+  the white lacing under it
+- foam lacing that is a net of even cells (chicken wire), or tinted cyan by the resin
+  above it instead of white
 - a black, opaque shadow under a clear object
 - dark purple where the blue resin should be (tone mapping hue shift)
 - everything in a piece the same size, centred, symmetric
@@ -95,7 +98,7 @@ as fake straight away, and each has a rule below:
 - **Neutral tone mapping.** ACES pushes saturated blue toward purple; the studio uses
   `NeutralToneMapping`, keep it.
 - **Shadows are tinted decals.** `contactShadow()` with the resin's colour, plus
-  `caustics()` offset away from the key light for wavy tops. No shadow maps.
+  `caustics()` offset away from the key light under ocean pours. No shadow maps.
 - **Interaction is handling the piece.** Drag turns it on the turntable and looks from higher or lower,
   it keeps a little momentum, then returns to a slow idle spin. The light sweeps a
   little so glints travel. No buttons in the card; one faint hint line.
@@ -110,9 +113,9 @@ as fake straight away, and each has a rule below:
 | `lib/studio.ts` | `studio(host, opts)`: softbox env, table, drag turntable, light sweep, `?debug` stepping, `pose` `setSpin` `setSurface` `setBackdrop` `dispose` |
 | `lib/surfaces.ts` | table tops: `marble` `wood` `linen` `plain` `none` |
 | `lib/export.ts` | `snapshot(studio, { width, height, matte })` → PNG blob; `exportModel(studio, 'glb' \| 'usdz' \| 'stl' \| 'obj')`; `CM_PER_UNIT` |
-| `lib/resin.ts` | `resin()` material; forms `block` `pour` `freeformOutline` `slab` `disc` (round pour with a wave top) `rippleField`; `pigment()` vertex tint; `scatter()` |
+| `lib/resin.ts` | `resin()` material; forms `block` `pour` `freeformOutline` `slab` `disc` (round pour; top and rim/wall as two material groups) `rippleField`; `pigment()` vertex tint; `scatter()` |
 | `lib/inclusions.ts` | `sandMaterial` `foamTexture` `flat` `shell` (ribbed valve) `snail` (spiral shell) `starfish` `pebbles` `beads` (pearls, bubbles) `glitter` `pressed` (daisy, five, hydrangea, lace, sprig, leaf) `rose` |
-| `lib/assets.ts` | `scan(url, { size, rotation, roughness })` loads a CC0 photogrammetry scan (GLB, meshopt, WebP) into a group placed at once; `ready(...)` for the piece's `ready` |
+| `lib/assets.ts` | `scan(url, { size, rotation, roughness, tint })` loads a CC0 photogrammetry scan (GLB, meshopt, WebP) into a group placed at once; `ready(...)` for the piece's `ready` |
 | `lib/light.ts` | `contactShadow` (tinted, rect or round) `caustics` (animated, additive); both tagged `userData.table` so cutouts and exports skip them |
 | `lib/noise.ts` | seeded `rng` `noise2` `fbm` (ridged for wave creases) `cells` (foam lace) |
 

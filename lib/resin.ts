@@ -176,7 +176,9 @@ export interface DiscOptions {
 /** A round pour with a heightfield top: the "piece of the sea" tray or coaster with
  * a wave surface. Like `slab()`, but on a wandering circular footprint with a rim
  * that rolls over the way surface tension leaves it. Use `discRadius()` to place
- * things inside it. */
+ * things inside it. Two material groups: 0 is the top, 1 the rolled rim, wall and
+ * bottom, so those can take a smaller `thickness` (at the top's thickness their steep
+ * faces smear what they refract into streaks). */
 export function disc(o: DiscOptions): THREE.BufferGeometry {
   const H = o.height, relief = o.relief ?? 0.12, surf = o.surface ?? rippleField(), calm = o.calm ?? (() => 1);
   const NR = o.rings ?? 90, NA = o.segments ?? 360, men = o.meniscus ?? 0.07;
@@ -200,10 +202,15 @@ export function disc(o: DiscOptions): THREE.BufferGeometry {
     ringIdx.push(row);
   }
   for (let i = 0; i < NA; i++) idx.push(c0, ringIdx[0][(i + 1) % NA], ringIdx[0][i]);
+  // The rolled rim goes with the wall (group 1): its steep faces refract far, and at
+  // the top's thickness they smear the image into streaks.
+  const rimIdx: number[] = [];
   for (let j = 0; j < NR - 1; j++) for (let i = 0; i < NA; i++) {
     const i2 = (i + 1) % NA, a = ringIdx[j][i], b = ringIdx[j][i2], c = ringIdx[j + 1][i], d = ringIdx[j + 1][i2];
-    idx.push(a, b, c, b, d, c);
+    ((j + 1) / NR > 1 - men ? rimIdx : idx).push(a, b, c, b, d, c);
   }
+  const topCount = idx.length;
+  idx.push(...rimIdx);
   // wall and bottom with their own vertices, so the rim stays a crisp edge
   const wt: number[] = [], wb: number[] = [], fb: number[] = [];
   for (let i = 0; i < NA; i++) {
@@ -217,6 +224,8 @@ export function disc(o: DiscOptions): THREE.BufferGeometry {
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   g.setIndex(idx);
+  g.addGroup(0, topCount, 0);
+  g.addGroup(topCount, idx.length - topCount, 1);
   g.computeVertexNormals();
   return g;
 }
